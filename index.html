@@ -13,12 +13,15 @@
             background-color: #000000;
             margin: 0;
             padding: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         #gm4html5_div_id {
@@ -33,10 +36,8 @@
             image-rendering: pixelated;
             image-rendering: crisp-edges;
             -webkit-interpolation-mode: nearest-neighbor;
-            max-width: 100vw;
-            max-height: 100vh;
-            width: auto;
-            height: auto;
+            width: 100vw !important;
+            height: 100vh !important;
             object-fit: contain;
             display: block;
         }
@@ -50,20 +51,18 @@
         </canvas>
     </div>
 
-    <!-- Завантаження підкладки гри -->
+    <!-- Завантаження скрипту гри -->
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
     <script>
         window.onload = function() {
-            // 1. Ініціалізація Telegram
             try {
                 if (window.Telegram && window.Telegram.WebApp) {
                     window.Telegram.WebApp.ready();
                     window.Telegram.WebApp.expand();
                 }
-            } catch(e) { console.log(e); }
+            } catch(e) {}
 
-            // 2. Старт GameMaker
             if (typeof GameMaker_Init === "function") {
                 GameMaker_Init();
             }
