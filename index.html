@@ -9,11 +9,15 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
+        /* ЯДЕРНА БЛОКІРОВКА ВСЬОГО БРАУЗЕРНОГО СМІТТЯ */
         * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none !important; /* Вбиває меню на iOS при затисканні */
+            -webkit-user-select: none !important;   /* Вбиває виділення тексту Safari */
+            -moz-user-select: none !important;      /* Firefox */
+            -ms-user-select: none !important;       /* Edge/IE */
+            user-select: none !important;           /* Стандартна заборона виділення */
+            -webkit-tap-highlight-color: transparent !important; /* Вбиває синій спалах */
+            outline: none !important;               /* Вбиває рамку фокусу */
         }
 
         html, body {
@@ -26,17 +30,17 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            touch-action: none;
-            overscroll-behavior: none; /* Забороняємо Телеграму тягати екран */
+            touch-action: none !important;          /* Забороняє зум і скрол */
+            overscroll-behavior: none !important;   /* Забороняє "гумові" відскоки */
         }
 
-        /* Видалили object-fit та width/height, тепер GM сам керує розміром! */
         canvas {
             image-rendering: pixelated;
             image-rendering: crisp-edges;
             -webkit-interpolation-mode: nearest-neighbor;
             display: block;
-            touch-action: none;
+            touch-action: none !important;
+            transform: translateZ(0);               /* Включає апаратне прискорення */
         }
     </style>
 </head>
@@ -51,14 +55,29 @@
     <!-- Завантаження скрипту гри -->
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
-  <script>
-        // 1. Блокуємо спроби браузера скролити сторінку пальцем
+    <script>
+        // --- 1. БЛОКУЄМО ПЕРЕТЯГУВАННЯ ТА СКРОЛ ---
         document.addEventListener('touchmove', function(e) {
             e.preventDefault();
         }, { passive: false });
 
-        // 2. БЛОКУЄМО КОНТЕКСТНЕ МЕНЮ (САМЕ ВОНО ФРІЗИТЬ ГРУ ПРИ ЗАТИСКАННІ!)
+        // --- 2. БЛОКУЄМО КОНТЕКСТНЕ МЕНЮ (ПРИ ЗАТИСКАННІ ПАЛЬЦЯ) ---
         document.addEventListener('contextmenu', function (e) { 
+            e.preventDefault(); 
+        });
+
+        // --- 3. БЛОКУЄМО СИСТЕМНЕ ВИДІЛЕННЯ ТЕКСТУ ---
+        document.addEventListener('selectstart', function(e) { 
+            e.preventDefault(); 
+        });
+
+        // --- 4. БЛОКУЄМО ПОДВІЙНИЙ КЛІК (ЩОБ БРАУЗЕР ЙОГО НЕ ЧЕКАВ!) ---
+        document.addEventListener('dblclick', function(e) { 
+            e.preventDefault(); 
+        });
+
+        // --- 5. БЛОКУЄМО ЖЕСТИ ЗУМУ (НА IOS) ---
+        document.addEventListener('gesturestart', function(e) { 
             e.preventDefault(); 
         });
 
@@ -69,6 +88,7 @@
                     tg.ready();
                     tg.expand();
                     
+                    // Блокуємо свайп вниз для закриття Телеграм-вікна
                     if (tg.disableVerticalSwipes) {
                         tg.disableVerticalSwipes();
                     }
