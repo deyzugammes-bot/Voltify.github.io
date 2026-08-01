@@ -27,8 +27,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* ГОЛОВНИЙ ФІКС: Вбиває 300мс затримку тапу і лаги при дотику! */
-            touch-action: manipulation !important;
+            /* Повністю блокуємо системний скрол сторінки */
+            touch-action: none !important;
             overscroll-behavior: none !important;
         }
 
@@ -48,8 +48,8 @@
             height: 100vh !important;
             object-fit: contain;
             display: block;
-            /* Дублюємо для ігрового полотна */
-            touch-action: manipulation !important;
+            /* ДОЗВОЛЯЄМО ДРАГ І ТАПИ ТІЛЬКИ ГРІ НА КАНВАСІ */
+            touch-action: none !important; 
         }
     </style>
 </head>
@@ -65,10 +65,13 @@
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
     <script>
-        // Жорсткий перехоплювач подій для уникнення будь-яких затримок в Telegram
-        document.addEventListener('touchstart', function(e) {
-            // Дозволяємо гру, але вимикаємо дефолтні браузерні очікування
-        }, { passive: true });
+        // Жорстко глушимо будь-які спроби браузера скролити сторінку за межами гри
+        document.addEventListener('touchmove', function(e) {
+            // Дозволяємо рух тільки всередині полотна гри (для магазину і перетягування)
+            if (e.target.tagName !== 'CANVAS') {
+                e.preventDefault();
+            }
+        }, { passive: false });
 
         window.onload = function() {
             try {
