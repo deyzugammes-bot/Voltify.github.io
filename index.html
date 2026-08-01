@@ -27,6 +27,7 @@
             justify-content: center;
             align-items: center;
             touch-action: none;
+            overscroll-behavior: none; /* Вбиваємо системний скрол браузера */
         }
 
         #gm4html5_div_id {
@@ -61,11 +62,22 @@
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
     <script>
+        // Жорстко блокуємо спроби браузера скролити сторінку пальцем
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
         window.onload = function() {
             try {
                 if (window.Telegram && window.Telegram.WebApp) {
-                    window.Telegram.WebApp.ready();
-                    window.Telegram.WebApp.expand();
+                    const tg = window.Telegram.WebApp;
+                    tg.ready();
+                    tg.expand();
+                    
+                    // Найголовніше: забороняємо Телеграму перехоплювати свайпи!
+                    if (tg.disableVerticalSwipes) {
+                        tg.disableVerticalSwipes();
+                    }
                 }
             } catch(e) {}
 
