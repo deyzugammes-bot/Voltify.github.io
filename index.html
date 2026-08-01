@@ -43,7 +43,6 @@
 
 <body>
     <div class="gm4html5_div_class" id="gm4html5_div_id">
-        <!-- ГОЛОВНИЙ ФІКС: ЗАБОРОНА ВІБРАЦІЇ, ПЕРЕТЯГУВАННЯ ТА ВИДІЛЕННЯ -->
         <canvas id="canvas" width="180" height="320" draggable="false" oncontextmenu="return false;" onselectstart="return false;">
             <p>Your browser doesn't support HTML5 canvas.</p>
         </canvas>
@@ -53,10 +52,18 @@
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
     <script>
-        // Блокуємо скрол екрана
+        // Блокуємо системний скрол
         document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
-        // Глобально блокуємо системне меню (вібрацію)
         window.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+        // МИТТЄВА ПЕРЕДАЧА ТАПУ В GAMEMAKER (Прибирає затримку 100мс)
+        const canvas = document.getElementById('canvas');
+        canvas.addEventListener('touchstart', function(e) {
+            // Розблоковуємо Web Audio при першому торканні
+            if (typeof g_WebAudioContext !== 'undefined' && g_WebAudioContext && g_WebAudioContext.state === 'suspended') {
+                g_WebAudioContext.resume();
+            }
+        }, { passive: true });
 
         window.onload = function() {
             try {
