@@ -10,11 +10,10 @@
 
     <style>
         * {
-            -webkit-touch-callout: none !important;
-            -webkit-user-select: none !important;
-            user-select: none !important;
-            -webkit-tap-highlight-color: transparent !important;
-            outline: none !important;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         html, body {
@@ -28,7 +27,6 @@
             justify-content: center;
             align-items: center;
             touch-action: none;
-            overscroll-behavior: none;
         }
 
         #gm4html5_div_id {
@@ -43,6 +41,9 @@
             image-rendering: pixelated;
             image-rendering: crisp-edges;
             -webkit-interpolation-mode: nearest-neighbor;
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: contain;
             display: block;
             touch-action: none;
         }
@@ -51,7 +52,7 @@
 
 <body>
     <div class="gm4html5_div_class" id="gm4html5_div_id">
-        <canvas id="canvas" width="180" height="320" draggable="false" oncontextmenu="return false;">
+        <canvas id="canvas" width="180" height="320">
             <p>Your browser doesn't support HTML5 canvas.</p>
         </canvas>
     </div>
@@ -60,26 +61,11 @@
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
     <script>
-        // Блокуємо системний скрол
-        document.addEventListener('touchmove', function(e) { 
-            e.preventDefault(); 
-        }, { passive: false });
-
-        // Блокуємо контекстне меню (щоб не було затримок на виділення)
-        window.addEventListener('contextmenu', function (e) { 
-            e.preventDefault(); 
-        });
-
         window.onload = function() {
             try {
                 if (window.Telegram && window.Telegram.WebApp) {
-                    const tg = window.Telegram.WebApp;
-                    tg.ready();
-                    tg.expand();
-                    
-                    if (tg.disableVerticalSwipes) {
-                        tg.disableVerticalSwipes();
-                    }
+                    window.Telegram.WebApp.ready();
+                    window.Telegram.WebApp.expand();
                 }
             } catch(e) {}
 
