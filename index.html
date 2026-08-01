@@ -21,14 +21,22 @@
             background-color: #000000;
             margin: 0;
             padding: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-            touch-action: none !important;
-            overscroll-behavior: none !important;
+            touch-action: none;
+            overscroll-behavior: none;
+        }
+
+        #gm4html5_div_id {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         canvas {
@@ -36,14 +44,14 @@
             image-rendering: crisp-edges;
             -webkit-interpolation-mode: nearest-neighbor;
             display: block;
-            touch-action: none !important;
+            touch-action: none;
         }
     </style>
 </head>
 
 <body>
     <div class="gm4html5_div_class" id="gm4html5_div_id">
-        <canvas id="canvas" width="180" height="320" draggable="false" oncontextmenu="return false;" onselectstart="return false;">
+        <canvas id="canvas" width="180" height="320" draggable="false" oncontextmenu="return false;">
             <p>Your browser doesn't support HTML5 canvas.</p>
         </canvas>
     </div>
@@ -52,39 +60,15 @@
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
     <script>
-        // 1. БЛОКУЄМО СКРОЛ ТА КОНТЕКСТНЕ МЕНЮ
-        document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
-        window.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-
-        const canvas = document.getElementById('canvas');
-
-        // 2. ГОЛОВНИЙ ФІКС ЗАРАДИ МИТТЄВОГО КЛІКУ:
-        // Перетворюємо touchstart на негайний mousedown для GameMaker
-        canvas.addEventListener('touchstart', function(e) {
-            e.preventDefault(); // Прибираємо 300мс затримку браузера!
-
-            // Розблоковуємо аудіо-потік
-            if (typeof g_WebAudioContext !== 'undefined' && g_WebAudioContext && g_WebAudioContext.state === 'suspended') {
-                g_WebAudioContext.resume();
-            }
-
-            // Передаємо синтезований клік миші прямо в полотно
-            if (e.touches.length > 0) {
-                var touch = e.touches[0];
-                var mouseEvent = new MouseEvent("mousedown", {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY,
-                    button: 0
-                });
-                canvas.dispatchEvent(mouseEvent);
-            }
+        // Блокуємо системний скрол
+        document.addEventListener('touchmove', function(e) { 
+            e.preventDefault(); 
         }, { passive: false });
 
-        canvas.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            var mouseEvent = new MouseEvent("mouseup", { button: 0 });
-            canvas.dispatchEvent(mouseEvent);
-        }, { passive: false });
+        // Блокуємо контекстне меню (щоб не було затримок на виділення)
+        window.addEventListener('contextmenu', function (e) { 
+            e.preventDefault(); 
+        });
 
         window.onload = function() {
             try {
@@ -92,6 +76,7 @@
                     const tg = window.Telegram.WebApp;
                     tg.ready();
                     tg.expand();
+                    
                     if (tg.disableVerticalSwipes) {
                         tg.disableVerticalSwipes();
                     }
