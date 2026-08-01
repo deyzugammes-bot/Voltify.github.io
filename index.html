@@ -27,6 +27,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            /* ДОЗВОЛЯЄМО ГРІП ТА ТАПИ, АЛЕ ВБИВАЄМО ЗУМ І СКРОЛ СТОРІНКИ */
             touch-action: none !important;
             overscroll-behavior: none !important;
         }
@@ -54,7 +55,7 @@
 
 <body>
     <div class="gm4html5_div_class" id="gm4html5_div_id">
-        <canvas id="canvas" width="180" height="320">
+        <canvas id="canvas" width="180" height="320" draggable="false" oncontextmenu="return false;">
             <p>Your browser doesn't support HTML5 canvas.</p>
         </canvas>
     </div>
@@ -63,9 +64,38 @@
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
     <script>
+        // Блокуємо скрол всього документа зовні канаваса
         document.addEventListener('touchmove', function(e) {
-            e.preventDefault();
+            if (e.target.tagName !== 'CANVAS') {
+                e.preventDefault();
+            }
         }, { passive: false });
+
+        // РОЗУМНИЙ КЛІК-ХАК: примусово ініціюємо подію миші при швидкому тапі
+        const canvas = document.getElementById('canvas');
+        let touchStartTime = 0;
+
+        canvas.addEventListener('touchstart', function(e) {
+            touchStartTime = Date.now();
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', function(e) {
+            // Якщо палець торкнувся і швидко піднявся (менше ніж за 200мс) — це швидкий тап!
+            if (Date.now() - touchStartTime < 200) {
+                if (e.changedTouches.length > 0) {
+                    var touch = e.changedTouches[0];
+                    // Штучно штовхаємо клік у движок, щоб кнопка спрацювала миттєво
+                    var clickEvent = new MouseEvent("click", {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    canvas.dispatchEvent(clickEvent);
+                }
+            }
+        }, { passive: true });
 
         window.onload = function() {
             try {
