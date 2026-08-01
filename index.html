@@ -52,18 +52,39 @@
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
     <script>
-        // Блокуємо системний скрол
+        // 1. БЛОКУЄМО СКРОЛ ТА КОНТЕКСТНЕ МЕНЮ
         document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
         window.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
-        // МИТТЄВА ПЕРЕДАЧА ТАПУ В GAMEMAKER (Прибирає затримку 100мс)
         const canvas = document.getElementById('canvas');
+
+        // 2. ГОЛОВНИЙ ФІКС ЗАРАДИ МИТТЄВОГО КЛІКУ:
+        // Перетворюємо touchstart на негайний mousedown для GameMaker
         canvas.addEventListener('touchstart', function(e) {
-            // Розблоковуємо Web Audio при першому торканні
+            e.preventDefault(); // Прибираємо 300мс затримку браузера!
+
+            // Розблоковуємо аудіо-потік
             if (typeof g_WebAudioContext !== 'undefined' && g_WebAudioContext && g_WebAudioContext.state === 'suspended') {
                 g_WebAudioContext.resume();
             }
-        }, { passive: true });
+
+            // Передаємо синтезований клік миші прямо в полотно
+            if (e.touches.length > 0) {
+                var touch = e.touches[0];
+                var mouseEvent = new MouseEvent("mousedown", {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                    button: 0
+                });
+                canvas.dispatchEvent(mouseEvent);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            var mouseEvent = new MouseEvent("mouseup", { button: 0 });
+            canvas.dispatchEvent(mouseEvent);
+        }, { passive: false });
 
         window.onload = function() {
             try {
