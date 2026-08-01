@@ -51,11 +51,16 @@
     <!-- Завантаження скрипту гри -->
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
-    <script>
-        // Жорстко блокуємо спроби браузера скролити сторінку пальцем
+  <script>
+        // 1. Блокуємо спроби браузера скролити сторінку пальцем
         document.addEventListener('touchmove', function(e) {
             e.preventDefault();
         }, { passive: false });
+
+        // 2. БЛОКУЄМО КОНТЕКСТНЕ МЕНЮ (САМЕ ВОНО ФРІЗИТЬ ГРУ ПРИ ЗАТИСКАННІ!)
+        document.addEventListener('contextmenu', function (e) { 
+            e.preventDefault(); 
+        });
 
         window.onload = function() {
             try {
@@ -64,7 +69,6 @@
                     tg.ready();
                     tg.expand();
                     
-                    // Найголовніше: забороняємо Телеграму перехоплювати свайпи!
                     if (tg.disableVerticalSwipes) {
                         tg.disableVerticalSwipes();
                     }
