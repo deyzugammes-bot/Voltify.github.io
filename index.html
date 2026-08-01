@@ -10,44 +10,38 @@
 
     <style>
         * {
-            -webkit-touch-callout: none !important;
-            -webkit-user-select: none !important;
-            user-select: none !important;
-            -webkit-tap-highlight-color: transparent !important;
-            outline: none !important;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
         }
 
         html, body {
             background-color: #000000;
             margin: 0;
             padding: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-            touch-action: none !important;
-            overscroll-behavior: none !important;
+            touch-action: none;
         }
 
-        #gm4html5_div_id {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        div.gm4html5_div_class {
+            margin: 0px;
+            padding: 0px;
+            border: 0px;
         }
 
         canvas {
             image-rendering: pixelated;
             image-rendering: crisp-edges;
             -webkit-interpolation-mode: nearest-neighbor;
-            width: 100vw !important;
-            height: 100vh !important;
-            object-fit: contain;
             display: block;
-            touch-action: none !important;
+            touch-action: none;
         }
     </style>
 </head>
@@ -63,11 +57,9 @@
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
     <script>
-        // Блокуємо скрол сторінки за межами канаваса
+        // Блокуємо системний скрол Телеграму під час дотиків
         document.addEventListener('touchmove', function(e) {
-            if (e.target.tagName !== 'CANVAS') {
-                e.preventDefault();
-            }
+            e.preventDefault();
         }, { passive: false });
 
         window.onload = function() {
@@ -76,7 +68,6 @@
                     const tg = window.Telegram.WebApp;
                     tg.ready();
                     tg.expand();
-                    
                     if (tg.disableVerticalSwipes) {
                         tg.disableVerticalSwipes();
                     }
