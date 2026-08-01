@@ -60,12 +60,21 @@
     <!-- Завантаження скрипту гри -->
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
-    <script>
+   <script>
+        // Примусово вимикаємо затримку тапа і виділення на рівні всього документа
+        document.addEventListener('touchstart', function(e) {
+            // Якщо це не мультитап, дозволяємо миттєву обробку
+        }, { passive: true });
+
         window.onload = function() {
             try {
                 if (window.Telegram && window.Telegram.WebApp) {
-                    window.Telegram.WebApp.ready();
-                    window.Telegram.WebApp.expand();
+                    const tg = window.Telegram.WebApp;
+                    tg.ready();
+                    tg.expand();
+                    if (tg.disableVerticalSwipes) {
+                        tg.disableVerticalSwipes();
+                    }
                 }
             } catch(e) {}
 
