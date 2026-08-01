@@ -27,7 +27,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* Повністю блокуємо системний скрол сторінки */
+            /* Повністю відрубуємо системний скрол по всьому екрану */
             touch-action: none !important;
             overscroll-behavior: none !important;
         }
@@ -38,6 +38,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
         }
 
         canvas {
@@ -48,8 +49,8 @@
             height: 100vh !important;
             object-fit: contain;
             display: block;
-            /* ДОЗВОЛЯЄМО ДРАГ І ТАПИ ТІЛЬКИ ГРІ НА КАНВАСІ */
-            touch-action: none !important; 
+            /* ДОЗВОЛЯЄМО ДРАГ ТА СКРОЛ МАГАЗИНУ, АЛЕ БЛОКУЄМО СХОДЖЕННЯ ЕКРАНА */
+            touch-action: pan-y pinch-zoom !important; 
         }
     </style>
 </head>
@@ -65,9 +66,8 @@
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
     <script>
-        // Жорстко глушимо будь-які спроби браузера скролити сторінку за межами гри
+        // Жорстке блокування будь-якого витягування сторінки за межами полотна
         document.addEventListener('touchmove', function(e) {
-            // Дозволяємо рух тільки всередині полотна гри (для магазину і перетягування)
             if (e.target.tagName !== 'CANVAS') {
                 e.preventDefault();
             }
