@@ -55,46 +55,40 @@
     <!-- Завантаження скрипту гри -->
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
-    <script>
-        // --- 1. БЛОКУЄМО ПЕРЕТЯГУВАННЯ ТА СКРОЛ ---
-        document.addEventListener('touchmove', function(e) {
+<script>
+        // ========================================================
+        // АБСОЛЮТНИЙ ЗАХИСТ ВІД РІДНОГО ДОДАТКУ ТЕЛЕГРАМУ
+        // ========================================================
+        
+        const preventTelegram = function(e) {
+            // Зупиняє дію браузера і НЕ ДАЄ дотику пройти в чат Телеграму
             e.preventDefault();
-        }, { passive: false });
+        };
 
-        // --- 2. БЛОКУЄМО КОНТЕКСТНЕ МЕНЮ (ПРИ ЗАТИСКАННІ ПАЛЬЦЯ) ---
-        document.addEventListener('contextmenu', function (e) { 
-            e.preventDefault(); 
-        });
-
-        // --- 3. БЛОКУЄМО СИСТЕМНЕ ВИДІЛЕННЯ ТЕКСТУ ---
-        document.addEventListener('selectstart', function(e) { 
-            e.preventDefault(); 
-        });
-
-        // --- 4. БЛОКУЄМО ПОДВІЙНИЙ КЛІК (ЩОБ БРАУЗЕР ЙОГО НЕ ЧЕКАВ!) ---
-        document.addEventListener('dblclick', function(e) { 
-            e.preventDefault(); 
-        });
-
-        // --- 5. БЛОКУЄМО ЖЕСТИ ЗУМУ (НА IOS) ---
-        document.addEventListener('gesturestart', function(e) { 
-            e.preventDefault(); 
-        });
+        // Ловимо дотик пальця
+        document.addEventListener('touchstart', preventTelegram, { passive: false });
+        // Ловимо рух пальця (перетягування)
+        document.addEventListener('touchmove', preventTelegram, { passive: false });
+        // Блокуємо спробу викликати меню "Копіювати/Вставити"
+        document.addEventListener('contextmenu', preventTelegram, { passive: false });
+        // Блокуємо будь-яке виділення тексту
+        document.addEventListener('selectstart', preventTelegram, { passive: false });
 
         window.onload = function() {
             try {
                 if (window.Telegram && window.Telegram.WebApp) {
                     const tg = window.Telegram.WebApp;
                     tg.ready();
-                    tg.expand();
+                    tg.expand(); // Розгортаємо на весь екран
                     
-                    // Блокуємо свайп вниз для закриття Телеграм-вікна
+                    // Забороняємо Телеграму закривати гру свайпом вниз
                     if (tg.disableVerticalSwipes) {
                         tg.disableVerticalSwipes();
                     }
                 }
             } catch(e) {}
 
+            // Запуск самої гри
             if (typeof GameMaker_Init === "function") {
                 GameMaker_Init();
             }
