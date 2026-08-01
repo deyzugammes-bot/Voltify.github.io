@@ -10,10 +10,11 @@
 
     <style>
         * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+            outline: none !important;
         }
 
         html, body {
@@ -26,7 +27,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            touch-action: none;
+            /* ГОЛОВНИЙ ФІКС: Вбиває 300мс затримку тапу і лаги при дотику! */
+            touch-action: manipulation !important;
+            overscroll-behavior: none !important;
         }
 
         #gm4html5_div_id {
@@ -45,7 +48,8 @@
             height: 100vh !important;
             object-fit: contain;
             display: block;
-            touch-action: none;
+            /* Дублюємо для ігрового полотна */
+            touch-action: manipulation !important;
         }
     </style>
 </head>
@@ -60,10 +64,10 @@
     <!-- Завантаження скрипту гри -->
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
-   <script>
-        // Примусово вимикаємо затримку тапа і виділення на рівні всього документа
+    <script>
+        // Жорсткий перехоплювач подій для уникнення будь-яких затримок в Telegram
         document.addEventListener('touchstart', function(e) {
-            // Якщо це не мультитап, дозволяємо миттєву обробку
+            // Дозволяємо гру, але вимикаємо дефолтні браузерні очікування
         }, { passive: true });
 
         window.onload = function() {
@@ -72,6 +76,7 @@
                     const tg = window.Telegram.WebApp;
                     tg.ready();
                     tg.expand();
+                    
                     if (tg.disableVerticalSwipes) {
                         tg.disableVerticalSwipes();
                     }
