@@ -91,9 +91,8 @@
             }
         }
         document.addEventListener('touchstart', unlockAudio, { passive: true });
-
-        // =======================================================
-        // ІНІЦІАЛІЗАЦІЯ ТЕЛЕГРАМУ (Заливаємо чат чорним!)
+       // =======================================================
+        // 3. ІНІЦІАЛІЗАЦІЯ TELEGRAM ТА ГРИ
         // =======================================================
         window.onload = function() {
             try {
@@ -102,12 +101,14 @@
                     tg.ready();
                     tg.expand();
                     
-                    // ЗМУШУЄМО ТЕЛЕГРАМ БУТИ ЧОРНИМ (вбиваємо прозорість чату)
+                    // НОВА ФІШКА: Просимо Телеграм віддати нам екран ПОВНІСТЮ
+                    try { tg.requestFullscreen(); } catch(e) {}
+                    
                     tg.setBackgroundColor('#000000');
                     tg.setHeaderColor('#000000');
                     
                     if (tg.disableVerticalSwipes) {
-                        tg.disableVerticalSwipes();
+                        tg.disableVerticalSwipes(); // Блокує згортання Телеграму
                     }
                 }
             } catch(e) {}
