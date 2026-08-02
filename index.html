@@ -101,14 +101,11 @@
                     tg.ready();
                     tg.expand();
                     
-                    // НОВА ФІШКА: Просимо Телеграм віддати нам екран ПОВНІСТЮ
-                    try { tg.requestFullscreen(); } catch(e) {}
-                    
                     tg.setBackgroundColor('#000000');
                     tg.setHeaderColor('#000000');
                     
                     if (tg.disableVerticalSwipes) {
-                        tg.disableVerticalSwipes(); // Блокує згортання Телеграму
+                        tg.disableVerticalSwipes(); 
                     }
                 }
             } catch(e) {}
