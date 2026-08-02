@@ -69,35 +69,35 @@
     <!-- Завантаження скрипту гри -->
     <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
-    <script>
+<script>
         // =======================================================
-        // 2. ЖОРСТКЕ БЛОКУВАННЯ БРАУЗЕРНИХ ЗААТРИМОК (JS-РІВЕНЬ)
+        // 2. ЖОРСТКЕ БЛОКУВАННЯ БРАУЗЕРНИХ ЗАТРИМОК (JS-РІВЕНЬ)
         // =======================================================
 
-        // Вбиваємо контекстне меню (зупиняє фріз при довгому затисканні)
-        window.oncontextmenu = function(e) { e.preventDefault(); e.stopPropagation(); return false; };
-        document.addEventListener('contextmenu', function(e) { e.preventDefault(); e.stopPropagation(); return false; });
-
-        // Блокуємо спробу браузера "почати виділення" тексту чи об'єктів
-        document.addEventListener('selectstart', function(e) { e.preventDefault(); });
-
-        // Блокуємо подвійний тап (зупиняє затримку перевірки на зум)
-        document.addEventListener('dblclick', function(e) { e.preventDefault(); }, { passive: false });
-
-        // Вбиваємо скрол браузера, віддаючи всі рухи виключно в GameMaker
-        document.addEventListener('touchmove', function(e) { 
+        // 🚨 ГОЛОВНИЙ ФІКС ЗАТРИМКИ ТАПІВ ТА ФРІЗІВ НА ANDROID 🚨
+        document.addEventListener('touchstart', function(e) {
+            // ЦЕЙ РЯДОК ВБИВАЄ ЗАТРИМКУ! Тепер клік миттєво йде в гру.
             e.preventDefault(); 
-        }, { passive: false });
-
-        // Розблокування аудіо
-        function unlockAudio() {
+            
+            // Одразу розблоковуємо звук
             if (typeof g_WebAudioContext !== 'undefined' && g_WebAudioContext) {
                 if (g_WebAudioContext.state === 'suspended') {
                     g_WebAudioContext.resume();
                 }
             }
-        }
-        document.addEventListener('touchstart', unlockAudio, { passive: true });
+        }, { passive: false });
+
+        // Вбиваємо контекстне меню при довгому натисканні
+        window.oncontextmenu = function(e) { e.preventDefault(); e.stopPropagation(); return false; };
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); e.stopPropagation(); return false; });
+
+        // Блокуємо спробу браузера "почати виділення" тексту
+        document.addEventListener('selectstart', function(e) { e.preventDefault(); });
+
+        // Вбиваємо скрол браузера, віддаючи всі рухи виключно в GameMaker
+        document.addEventListener('touchmove', function(e) { 
+            e.preventDefault(); 
+        }, { passive: false });
 
         // =======================================================
         // 3. ІНІЦІАЛІЗАЦІЯ TELEGRAM ТА ГРИ
@@ -109,7 +109,7 @@
                     tg.ready();
                     tg.expand();
                     if (tg.disableVerticalSwipes) {
-                        tg.disableVerticalSwipes(); // Блокує закриття Телеграму при свайпі вниз
+                        tg.disableVerticalSwipes(); // Блокує згортання Телеграму
                     }
                 }
             } catch(e) {}
