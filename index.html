@@ -1,131 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <!-- Жорстко фіксуємо масштаб -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <title>Voltify</title>
 
-    <!-- Custom PreHead code is injected here -->
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        /* БЛОКУЄМО СИСТЕМНЕ ВИДІЛЕННЯ ТА ЖЕСТИ НА ВСІХ РІВНЯХ */
+        * {
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            -khtml-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+            -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+            outline: none !important;
+        }
+
+        /* РОБИМО ФОН ЧОРНИМ І БЛОКУЄМО ПОВЕДІНКУ БРАУЗЕРА */
+        html, body {
+            background-color: #000000 !important; /* Ніякої прозорості */
+            color: transparent;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed; /* Намертво фіксує екран на одному місці */
+            top: 0; left: 0; right: 0; bottom: 0;
+            touch-action: none !important; 
+            overscroll-behavior: none !important;
+        }
+
+        #gm4html5_div_id {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            -webkit-interpolation-mode: nearest-neighbor;
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: contain;
+            display: block;
+            touch-action: none !important;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+
+<!-- Відключаємо системні меню безпосередньо в тегах -->
+<body oncontextmenu="return false;" onselectstart="return false;" ondragstart="return false;">
     
+    <div class="gm4html5_div_class" id="gm4html5_div_id">
+        <canvas id="canvas" width="180" height="320" draggable="false" oncontextmenu="return false;">
+            <p>Your browser doesn't support HTML5 canvas.</p>
+        </canvas>
+    </div>
 
-    <head>
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name ="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta charset="utf-8"/>
+    <script type="text/javascript" src="html5game/Voltify.js?cachebust=303040381"></script>
 
-        <!-- Builtin injector for disabling cache -->
-        <meta http-equiv="pragma" content="no-cache"/>
-
-        <!-- Set the title bar of the page -->
-        <title>Pixel Game</title>
-
-        <!-- Custom PreStyle code is injected here -->
+    <script>
+        // Блокуємо спробу браузера перехопити клік для виділення чи зуму
+        const preventNative = (e) => {
+            if (e.target.tagName !== 'CANVAS') {
+                e.preventDefault();
+            }
+        };
         
+        document.addEventListener('contextmenu', preventNative, { passive: false });
+        document.addEventListener('selectstart', preventNative, { passive: false });
+        document.addEventListener('dblclick', preventNative, { passive: false });
+        document.addEventListener('touchmove', preventNative, { passive: false });
 
-        <!-- Set the background colour of the document -->
-        <style>
-            body {
-                background: #0;
-                color: #cccccc;
-                margin: 0px;
-                padding: 0px;
-                border: 0px;
+        // Розблокування аудіо без фрізів
+        function unlockAudio() {
+            if (typeof g_WebAudioContext !== 'undefined' && g_WebAudioContext) {
+                if (g_WebAudioContext.state === 'suspended') g_WebAudioContext.resume();
             }
+        }
+        document.addEventListener('touchstart', unlockAudio, { passive: true });
 
-            canvas {
-                image-rendering: optimizeSpeed;
-                -webkit-interpolation-mode: nearest-neighbor;
-                -ms-touch-action: none;
-                touch-action: none;
-                margin: 0px;
-                padding: 0px;
-                border: 0px;
+        // =======================================================
+        // ІНІЦІАЛІЗАЦІЯ ТЕЛЕГРАМУ (Заливаємо чат чорним!)
+        // =======================================================
+        window.onload = function() {
+            try {
+                if (window.Telegram && window.Telegram.WebApp) {
+                    const tg = window.Telegram.WebApp;
+                    tg.ready();
+                    tg.expand();
+                    
+                    // ЗМУШУЄМО ТЕЛЕГРАМ БУТИ ЧОРНИМ (вбиваємо прозорість чату)
+                    tg.setBackgroundColor('#000000');
+                    tg.setHeaderColor('#000000');
+                    
+                    if (tg.disableVerticalSwipes) {
+                        tg.disableVerticalSwipes();
+                    }
+                }
+            } catch(e) {}
+
+            if (typeof GameMaker_Init === "function") {
+                GameMaker_Init();
             }
-            :-webkit-full-screen #canvas {
-                width: 100%;
-                height: 100%;
-            }
-            :-webkit-full-screen {
-                width: 100%;
-                height: 100%;
-            }
-            
-            /* Custom Runner Styles */
-            div.gm4html5_div_class {
-                margin: 0px;
-                padding: 0px;
-                border: 0px;
-            }
-            div.gm4html5_login {
-                padding: 20px;
-                position: absolute;
-                border: solid 2px #000000;
-                background-color: #404040;
-                color:#00ff00;
-                border-radius: 15px;
-                box-shadow: #101010 20px 20px 40px;
-            }
-            div.gm4html5_cancel_button {
-                float: right;
-            }
-            div.gm4html5_login_button {
-                float: left;
-            }
-            div.gm4html5_login_header {
-                text-align: center;
-            }
-            /* END - Custom Runner Styles */
-            
-        </style>
-
-        <!-- Custom PostStyle code is injected here -->
-        
-
-        <!-- Builtin injector for injecting flurry analytics code -->
-        
-    </head>
-
-    <!-- Custom PostHead code is injected here -->
-    
-
-    <!-- Custom PreBody code is injected here -->
-    
-
-    <body>
-        <!-- Custom BodyStart code is injected here -->
-        
-
-        <div class="gm4html5_div_class" id="gm4html5_div_id">
-            
-            <!-- Builtin injector for splash screen -->
-            
-
-            <!-- Custom PreCanvas code is injected here -->
-            
-
-            <!-- Create the canvas element the game draws to -->
-            <canvas id="canvas" width="180" height="320" style="position: absolute; top: 50%; left: 50%; bottom: -50%; right: -50%; transform: translate(-50%, -50%);">
-                
-                <p>Your browser doesn't support HTML5 canvas.</p>
-            </canvas>
-            
-            <!-- Custom PostCanvas code is injected here -->
-            
-        </div>
-
-        <!-- Run the game code -->
-        <script type="text/javascript" src="html5game/Voltify.js?cachebust=1762662711"></script>
-
-        <!-- Builtin injector for injecting runner path -->
-        
-
-        <script>window.onload = GameMaker_Init;</script>
-
-        <!-- Builtin injector for injecting google analytics code -->
-        
-
-        <!-- Custom BodyEnd code is injected here -->
-        
-    </body>
-
-    <!-- Custom PostBody code is injected here -->
-    
+        };
+    </script>
+</body>
 </html>
