@@ -84,10 +84,15 @@
         document.addEventListener('dblclick', preventNative, { passive: false });
         document.addEventListener('touchmove', preventNative, { passive: false });
 
-        // Розблокування аудіо без фрізів
+      // Розблокування аудіо ТІЛЬКИ НА ПЕРШИЙ КЛІК
         function unlockAudio() {
             if (typeof g_WebAudioContext !== 'undefined' && g_WebAudioContext) {
-                if (g_WebAudioContext.state === 'suspended') g_WebAudioContext.resume();
+                if (g_WebAudioContext.state === 'suspended') {
+                    g_WebAudioContext.resume();
+                }
+                // 🚨 ОСЬ ЦЕЙ РЯДОК ВБИВАЄ МІКРО-ФРІЗИ ВІД ТАПІВ! 🚨
+                // Після першого дотику скрипт самознищується і більше не гальмує гру
+                document.removeEventListener('touchstart', unlockAudio);
             }
         }
         document.addEventListener('touchstart', unlockAudio, { passive: true });
