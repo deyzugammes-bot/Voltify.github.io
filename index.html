@@ -119,6 +119,15 @@
                 GameMaker_Init();
             }
         };
+
+        // Залізобетонний блок на будь-які дії браузера з канвасом
+        var canvas = document.getElementById('canvas');
+        if (canvas) {
+            canvas.addEventListener('touchstart', function(e) {
+                window.focus(); 
+                e.preventDefault(); // Зупиняє мікро-фріз від розрахунків виділення браузера
+            }, {passive: false});
+        }
     </script>
 </body>
 </html>
