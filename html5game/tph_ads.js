@@ -2,18 +2,11 @@
 let myAdController = null;
 let isAdProcessing = false;
 
-// 2. ІНІЦІАЛІЗУЄМО ADSGRAM У ФОНІ, коли гра тільки запускається!
-window.addEventListener('load', function() {
-    if (window.Adsgram) {
-        // ТВІЙ НОВИЙ ТЕСТОВИЙ ID
-        myAdController = window.Adsgram.init({ blockId: "41615" });
-    }
-});
-
-// 3. ФУНКЦІЯ ВИКЛИКУ (коли гравець тисне кнопку)
+// 3. ФУНКЦІЯ ВИКЛИКУ
 function js_show_ad() {
+    // Функція розблокування гри
     function callGML(val) {
-        isAdProcessing = false; // Знімаємо блок кліків
+        isAdProcessing = false; 
         try {
             if (typeof window.gmcallback_ad_reward === "function") {
                 window.gmcallback_ad_reward(val);
@@ -25,22 +18,39 @@ function js_show_ad() {
         }
     }
 
-    // Захист від того, щоб гравець не спамив кнопку
+    // Блокуємо подвійні кліки (через які була помилка "Attempt to call show")
     if (isAdProcessing) return; 
+    isAdProcessing = true;
 
-    if (myAdController) {
-        isAdProcessing = true;
-        myAdController.show().then((result) => {
-            // УСПІХ! Відео подивились.
-            callGML(1);
-        }).catch((err) => {
-            // ПОМИЛКА АБО "НЕМАЄ ВІДЕО"
-            console.log("Adsgram Info:", err);
+    if (window.Adsgram) {
+        try {
+            // Ініціалізуємо тільки якщо ще не ініціалізували
+            if (!myAdController) {
+                myAdController = window.Adsgram.init({ blockId: "41615" });
+            }
+            
+            myAdController.show().then((result) => {
+                // УСПІХ
+                callGML(1);
+            }).catch((err) => {
+                // ПОМИЛКА! Виводимо її через красиве вікно Telegram
+                try {
+                    window.Telegram.WebApp.showAlert("Adsgram Test Error:\n" + JSON.stringify(err));
+                } catch(e) {
+                    alert("Adsgram Test Error:\n" + JSON.stringify(err));
+                }
+                callGML(0);
+            });
+        } catch (initErr) {
+            try {
+                window.Telegram.WebApp.showAlert("Init Error:\n" + initErr.message);
+            } catch(e) {}
             callGML(0);
-        });
+        }
     } else {
-        // Якщо Adsgram взагалі не зміг запуститися
-        console.log("Adsgram SDK не знайдено");
+        try {
+            window.Telegram.WebApp.showAlert("Критична помилка: Скрипт Adsgram не завантажився в HTML!");
+        } catch(e) {}
         callGML(0);
     }
 }
