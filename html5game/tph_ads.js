@@ -1,12 +1,17 @@
-// 1. Змінна для контролера
 let myAdController = null;
 let isAdProcessing = false;
 
-// 3. ФУНКЦІЯ ВИКЛИКУ
+// 1. Ініціалізуємо рекламу тихо у фоні при старті гри
+window.addEventListener('load', function() {
+    if (window.Adsgram) {
+        myAdController = window.Adsgram.init({ blockId: "41615" });
+    }
+});
+
 function js_show_ad() {
-    // Функція розблокування гри
+    // Функція, яка 100% знімає блок і повертає гру до життя
     function callGML(val) {
-        isAdProcessing = false; 
+        isAdProcessing = false; // РОЗБЛОКОВУЄМО КНОПКУ
         try {
             if (typeof window.gmcallback_ad_reward === "function") {
                 window.gmcallback_ad_reward(val);
@@ -14,43 +19,33 @@ function js_show_ad() {
                 window.gml_Script_gmcallback_ad_reward(null, null, val);
             }
         } catch (e) {
-            console.error("GameMaker link error:", e);
+            console.error("Помилка зв'язку GML:", e);
         }
     }
 
-    // Блокуємо подвійні кліки (через які була помилка "Attempt to call show")
+    // Захист від подвійного кліку
     if (isAdProcessing) return; 
     isAdProcessing = true;
 
-    if (window.Adsgram) {
-        try {
-            // Ініціалізуємо тільки якщо ще не ініціалізували
-            if (!myAdController) {
-                myAdController = window.Adsgram.init({ blockId: "41615" });
+    if (myAdController) {
+        myAdController.show().then((result) => {
+            // УСПІХ! Гравець подивився рекламу
+            callGML(1);
+        }).catch((err) => {
+            // БЕЗПЕЧНИЙ ВИВІД ПОМИЛКИ (Без крашів)
+            let errorText = "Невідома помилка";
+            if (err && err.description) {
+                errorText = err.description;
             }
             
-            myAdController.show().then((result) => {
-                // УСПІХ
-                callGML(1);
-            }).catch((err) => {
-                // ПОМИЛКА! Виводимо її через красиве вікно Telegram
-                try {
-                    window.Telegram.WebApp.showAlert("Adsgram Test Error:\n" + JSON.stringify(err));
-                } catch(e) {
-                    alert("Adsgram Test Error:\n" + JSON.stringify(err));
-                }
-                callGML(0);
-            });
-        } catch (initErr) {
-            try {
-                window.Telegram.WebApp.showAlert("Init Error:\n" + initErr.message);
-            } catch(e) {}
+            // Виводимо просте вікно, щоб ти побачив причину
+            alert("Adsgram Info:\n" + errorText);
+            
+            // Гарантовано видаємо втішний приз і знімаємо паузу
             callGML(0);
-        }
+        });
     } else {
-        try {
-            window.Telegram.WebApp.showAlert("Критична помилка: Скрипт Adsgram не завантажився в HTML!");
-        } catch(e) {}
+        alert("Помилка: Adsgram не підключено!");
         callGML(0);
     }
 }
