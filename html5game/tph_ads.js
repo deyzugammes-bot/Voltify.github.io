@@ -5,7 +5,8 @@ let isAdProcessing = false;
 // 2. ІНІЦІАЛІЗУЄМО ADSGRAM У ФОНІ, коли гра тільки запускається!
 window.addEventListener('load', function() {
     if (window.Adsgram) {
-        myAdController = window.Adsgram.init({ blockId: "41335" });
+        // ТВІЙ НОВИЙ ТЕСТОВИЙ ID
+        myAdController = window.Adsgram.init({ blockId: "41615" });
     }
 });
 
@@ -24,7 +25,7 @@ function js_show_ad() {
         }
     }
 
-    // Захист від того, щоб гравець не спамив кнопку 10 разів за секунду
+    // Захист від того, щоб гравець не спамив кнопку
     if (isAdProcessing) return; 
 
     if (myAdController) {
@@ -34,12 +35,11 @@ function js_show_ad() {
             callGML(1);
         }).catch((err) => {
             // ПОМИЛКА АБО "НЕМАЄ ВІДЕО"
-            // (Віконце alert прибрано. Гравець просто отримає втішний бонус)
             console.log("Adsgram Info:", err);
             callGML(0);
         });
     } else {
-        // Якщо Adsgram взагалі не зміг запуститися (наприклад, AdBlock)
+        // Якщо Adsgram взагалі не зміг запуститися
         console.log("Adsgram SDK не знайдено");
         callGML(0);
     }
