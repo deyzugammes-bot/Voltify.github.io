@@ -1,11 +1,11 @@
 var myAdController = null;
 var isAdProcessing = false;
 
-// РАДАР (ТЕСТОВИЙ БЛОК 41615)
+// РАДАР (ТВІЙ БОЙОВИЙ БЛОК ДЛЯ ЗАРОБІТКУ - 41335)
 var initRadar = setInterval(function() {
     if (window.Adsgram && myAdController === null) {
         try {
-            myAdController = window.Adsgram.init({ blockId: "41615" });
+            myAdController = window.Adsgram.init({ blockId: "41335" });
             clearInterval(initRadar);
         } catch (e) {}
     }
@@ -31,34 +31,30 @@ function js_show_ad() {
         
         if (playPromise && playPromise.then) {
             playPromise.then(function(result) {
-                // ВІДЕО ПОКАЗАНО!
+                // ВІДЕО ПОКАЗАНО - ДАЄМО НАГОРОДУ!
                 callGML(1);
             }).catch(function(err) {
-                // ДІСТАЄМО СПРАВЖНЮ ПОМИЛКУ ВІД ADSGRAM
-                var msg = (err && err.description) ? err.description : JSON.stringify(err);
-                var finalText = "";
+                var msg = (err && err.description) ? err.description : "";
                 
+                // Якщо відео ще фізично не докачалося через повільний інтернет
                 if (msg.indexOf("loading") !== -1) {
-                    finalText = "Відео ще завантажується... Почекайте пару секунд і натисніть знову.";
-                } else {
-                    finalText = "Відповідь Adsgram:\n" + msg;
+                    var textLoad = "Реклама ще завантажується... Будь ласка, зачекайте кілька секунд і спробуйте знову!";
+                    try { window.Telegram.WebApp.showAlert(textLoad); } catch (e) { alert(textLoad); }
+                    callGML(2); 
+                } 
+                // Якщо включений AdBlock або блокування провайдером
+                else {
+                    var textBlock = "На жаль, сталася помилка. Реклама не може бути показана (можливо, немає доступних відео або у вас увімкнений AdBlock). Будь ласка, переконайтеся, що у вас вимкнений AdBlock і повторіть спробу пізніше.";
+                    try { window.Telegram.WebApp.showAlert(textBlock); } catch (e) { alert(textBlock); }
+                    callGML(0); 
                 }
-
-                // ВИКЛИКАЄМО РІДНЕ ВІКНО TELEGRAM (ВОНО 100% ПОКАЖЕТЬСЯ НА ТЕЛЕФОНІ)
-                try {
-                    window.Telegram.WebApp.showAlert(finalText);
-                } catch (e) {
-                    alert(finalText); // Запасний варіант для ПК
-                }
-                
-                callGML(0); 
             });
         } else {
-            try { window.Telegram.WebApp.showAlert("Помилка плеєра Adsgram."); } catch(e) { alert("Помилка плеєра Adsgram."); }
             callGML(0);
         }
     } else {
-        try { window.Telegram.WebApp.showAlert("Adsgram ще підключається..."); } catch(e) { alert("Adsgram ще підключається..."); }
+        var textInit = "Система ще підключається. Зачекайте пару секунд.";
+        try { window.Telegram.WebApp.showAlert(textInit); } catch(e) { alert(textInit); }
         callGML(2);
     }
 }
