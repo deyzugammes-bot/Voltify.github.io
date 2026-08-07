@@ -34,25 +34,31 @@ function js_show_ad() {
                 // ВІДЕО ПОКАЗАНО!
                 callGML(1);
             }).catch(function(err) {
-                var msg = (err && err.description) ? err.description : "";
+                // ДІСТАЄМО СПРАВЖНЮ ПОМИЛКУ ВІД ADSGRAM
+                var msg = (err && err.description) ? err.description : JSON.stringify(err);
+                var finalText = "";
                 
-                // Якщо відео ще фізично не докачалося через інтернет
                 if (msg.indexOf("loading") !== -1) {
-                    alert("Відео ще завантажується у фоні (повільний інтернет). Зачекайте ще кілька секунд!");
-                    callGML(2); 
-                } 
-                // Якщо включений AdBlock або інша помилка
-                else {
-                    alert("Помилка або увімкнено AdBlock. Реклама недоступна. Вимкніть блокувальник та перезапустіть гру.");
-                    callGML(0); 
+                    finalText = "Відео ще завантажується... Почекайте пару секунд і натисніть знову.";
+                } else {
+                    finalText = "Відповідь Adsgram:\n" + msg;
                 }
+
+                // ВИКЛИКАЄМО РІДНЕ ВІКНО TELEGRAM (ВОНО 100% ПОКАЖЕТЬСЯ НА ТЕЛЕФОНІ)
+                try {
+                    window.Telegram.WebApp.showAlert(finalText);
+                } catch (e) {
+                    alert(finalText); // Запасний варіант для ПК
+                }
+                
+                callGML(0); 
             });
         } else {
-            alert("Помилка плеєра Adsgram.");
+            try { window.Telegram.WebApp.showAlert("Помилка плеєра Adsgram."); } catch(e) { alert("Помилка плеєра Adsgram."); }
             callGML(0);
         }
     } else {
-        alert("Adsgram ще підключається. Зачекайте пару секунд!");
+        try { window.Telegram.WebApp.showAlert("Adsgram ще підключається..."); } catch(e) { alert("Adsgram ще підключається..."); }
         callGML(2);
     }
 }
