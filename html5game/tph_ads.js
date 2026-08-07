@@ -1,21 +1,17 @@
 var myAdController = null;
 var isAdProcessing = false;
 
-// 1. РАДАР (працює тихо і без збоїв)
+// РАДАР (ТЕСТОВИЙ БЛОК 41615)
 var initRadar = setInterval(function() {
     if (window.Adsgram && myAdController === null) {
         try {
             myAdController = window.Adsgram.init({ blockId: "41615" });
             clearInterval(initRadar);
-        } catch (e) {
-            console.error("Adsgram init error: ", e);
-        }
+        } catch (e) {}
     }
 }, 500);
 
-// 2. ФУНКЦІЯ КЛІКУ
 function js_show_ad() {
-    // Функція зв'язку з GameMaker
     function callGML(val) {
         isAdProcessing = false;
         try {
@@ -27,39 +23,36 @@ function js_show_ad() {
         } catch (e) {}
     }
 
-    try {
-        // Якщо кнопка зависла з минулого разу - розблоковуємо її!
-        if (isAdProcessing) {
-            isAdProcessing = false;
-            return;
-        }
-        
-        isAdProcessing = true;
+    if (isAdProcessing) return;
+    isAdProcessing = true;
 
-        if (myAdController !== null) {
-            var playPromise = myAdController.show();
-            
-            if (playPromise && playPromise.then) {
-                playPromise.then(function(result) {
-                    // УСПІХ! Відео показано
-                    callGML(1);
-                }).catch(function(err) {
-                    // ПОМИЛКА АБО НЕМАЄ ВІДЕО
-                    var msg = (err && err.description) ? err.description : "Невідома помилка";
-                    alert("Adsgram:\n" + msg);
-                    callGML(0); // Видаємо втішний приз
-                });
-            } else {
-                alert("Adsgram не зміг запустити відео!");
-                callGML(0);
-            }
+    if (myAdController !== null) {
+        var playPromise = myAdController.show();
+        
+        if (playPromise && playPromise.then) {
+            playPromise.then(function(result) {
+                // ВІДЕО ПОКАЗАНО!
+                callGML(1);
+            }).catch(function(err) {
+                var msg = (err && err.description) ? err.description : "";
+                
+                // Якщо відео ще фізично не докачалося через інтернет
+                if (msg.indexOf("loading") !== -1) {
+                    alert("Відео ще завантажується у фоні (повільний інтернет). Зачекайте ще кілька секунд!");
+                    callGML(2); 
+                } 
+                // Якщо включений AdBlock або інша помилка
+                else {
+                    alert("Помилка або увімкнено AdBlock. Реклама недоступна. Вимкніть блокувальник та перезапустіть гру.");
+                    callGML(0); 
+                }
+            });
         } else {
-            // Якщо радар ще не встиг знайти Adsgram
-            alert("Реклама ще підключається... Спробуй через 2 секунди!");
+            alert("Помилка плеєра Adsgram.");
             callGML(0);
         }
-    } catch (globalErr) {
-        alert("Помилка скрипта:\n" + globalErr.message);
-        callGML(0);
+    } else {
+        alert("Adsgram ще підключається. Зачекайте пару секунд!");
+        callGML(2);
     }
 }
