@@ -44,6 +44,10 @@ function adaptivePerfTick(now){
     }
 }
 let __framePE=null;
+let __frameWallNow=Date.now();
+let __gameFrameId=0;
+window.__GAME_FRAME_ID__=0;
+window.__GAME_FRAME_NOW__=performance.now();
 
 const pdParent = window.parent;
 let playdeckPlatform='unknown';
@@ -199,7 +203,7 @@ function gameplayRandom(){
 }
 // V5.7 SOFT-LAUNCH TELEMETRY ----------------------------------------------
 // Lightweight, privacy-safe gameplay analytics. No names/usernames are sent.
-const GAME_BUILD_VERSION='5.9';
+const GAME_BUILD_VERSION='1.0.4';
 const TELEMETRY_STATE_KEY='1BitTelemetryState';
 const TELEMETRY_DEBUG_KEY='1BitTelemetryDebug';
 const telemetrySessionStartedAt=Date.now();
@@ -1634,7 +1638,7 @@ class Node {
         this.orbitAngle = Math.random() * Math.PI * 2; 
         this.baseAngle = Math.random() * Math.PI * 2;  
         this.turretAngle = Math.random() * Math.PI * 2; 
-        this.laserCooldown = 0; this.pulse = 0;
+        this.laserCooldown = 0; this.laserScanWait = 0; this.pulse = 0;
     }
     
     drawShape(ctx, r, owner) {
@@ -1649,33 +1653,40 @@ class Node {
 
     shootLaser() {
         if (this.owner === 0 || this.laserCooldown > 0) return;
-        if (!this.isCapital && this.type !== 2) return; 
-        
+        if (!this.isCapital && this.type !== 2) return;
+        if (this.laserScanWait > 0) { this.laserScanWait--; return; }
+
         let range = this.isCapital ? 150 : 110;
         let dmg = this.isCapital ? 4 : 2;
         let cd = this.isCapital ? 15 : 35;
         if (this.isBoss) { const t=this.bossTier||1; range=170+t*18; dmg=4.5+t*1.35; cd=Math.max(7,14-t*2); }
-        if (this.owner === 1) { const pe=__framePE || protocolEffects(); dmg += pe.turretDamage + (this.isCapital ? pe.capitalTurret : 0); cd = Math.max(6, Math.round(cd * pe.turretCooldown)); } 
-        let numTurrets = this.isBoss ? 2+(this.bossTier||1) : (this.isCapital ? 2 : 1);
-        
-        // POINT DEFENSE: Стріляємо ТІЛЬКИ по тих, хто летить атакувати САМЕ ЦЮ БАЗУ
-        let target = units.find(u => u.owner !== this.owner && u.target === this && Math.hypot(this.x - u.x, this.y - u.y) < range && !u.suckedBy);
-        
-        if (target) { 
-            let bestDist = Infinity; let shootX = this.x; let shootY = this.y;
-            
-            for (let i = 0; i < numTurrets; i++) {
-                let currentAngle = this.turretAngle + (i * Math.PI); 
-                let tx = this.x + Math.cos(currentAngle) * (this.radius + 16);
-                let ty = this.y + Math.sin(currentAngle) * (this.radius + 16);
-                let distToTarget = Math.hypot(tx - target.x, ty - target.y);
-                if (distToTarget < bestDist) { bestDist = distToTarget; shootX = tx; shootY = ty; }
-            }
+        if (this.owner === 1) { const pe=__framePE || protocolEffects(); dmg += pe.turretDamage + (this.isCapital ? pe.capitalTurret : 0); cd = Math.max(6, Math.round(cd * pe.turretCooldown)); }
+        const numTurrets = this.isBoss ? 2+(this.bossTier||1) : (this.isCapital ? 2 : 1);
+        const range2=range*range;
 
-            if(!__perfLite || lasers.length<32) lasers.push({ x1: shootX, y1: shootY, x2: target.x, y2: target.y, life: 1.0 }); 
-            target.hp -= dmg; 
-            this.laserCooldown = cd; 
+        // Avoid Array.find + Math.hypot allocation/work every frame. If there is no
+        // attacker, retry after a few frames; when there is one, firing behaviour is unchanged.
+        let target=null;
+        for(let i=0;i<units.length;i++){
+            const u=units[i];
+            if(u.owner===this.owner || u.target!==this || u.suckedBy) continue;
+            const dx=this.x-u.x,dy=this.y-u.y;
+            if(dx*dx+dy*dy<range2){target=u;break;}
         }
+        if(!target){ this.laserScanWait=__perfLite?5:2; return; }
+
+        let bestDist2 = Infinity, shootX = this.x, shootY = this.y;
+        for (let i = 0; i < numTurrets; i++) {
+            const currentAngle = this.turretAngle + (i * Math.PI * 2 / numTurrets);
+            const tx = this.x + Math.cos(currentAngle) * (this.radius + 16);
+            const ty = this.y + Math.sin(currentAngle) * (this.radius + 16);
+            const dx=tx-target.x,dy=ty-target.y,dist2=dx*dx+dy*dy;
+            if (dist2 < bestDist2) { bestDist2 = dist2; shootX = tx; shootY = ty; }
+        }
+        if(!__perfLite || lasers.length<32) lasers.push({ x1: shootX, y1: shootY, x2: target.x, y2: target.y, life: 1.0 });
+        target.hp -= dmg;
+        this.laserCooldown = cd;
+        this.laserScanWait = 0;
     }
 
     draw(MAIN_C, isPlaying) {
@@ -1768,7 +1779,7 @@ class Unit {
         }
 
         const pe = __framePE || protocolEffects();
-        let currentSpeed = this.baseSpeed * this.phaseBoost * (this.owner===1 ? sectorEventValue('speedPlayer',1) : sectorEventValue('speedEnemy',1)); if(this.owner===1 && Date.now()-sectorStartTime<20000) currentSpeed*=pe.openingSpeed;
+        let currentSpeed = this.baseSpeed * this.phaseBoost * (this.owner===1 ? sectorEventValue('speedPlayer',1) : sectorEventValue('speedEnemy',1)); if(this.owner===1 && __frameWallNow-sectorStartTime<20000) currentSpeed*=pe.openingSpeed;
         for (let ast of asteroids) { if (Math.hypot(this.x - ast.x, this.y - ast.y) < ast.r) { currentSpeed *= (this.owner===1 ? pe.asteroidSlow : 0.4); break; } }
         
         const dx = this.target.x - this.x; const dy = this.target.y - this.y; const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1791,7 +1802,7 @@ class Unit {
         if (dist < (this.target.radius || 20)) {
             if (this.target instanceof Wormhole) {
                 this.x = this.target.twin.x; this.y = this.target.twin.y;
-                if (this.owner===1) { const pe=protocolEffects(); this.phaseBoost = pe.phaseSpeed; this.hp += pe.phaseArmor; }
+                if (this.owner===1) { const pe=__framePE || protocolEffects(); this.phaseBoost = pe.phaseSpeed; this.hp += pe.phaseArmor; }
                 let nearest = null; let minDist = Infinity;
                 nodes.forEach(n => { if (n.owner !== this.owner) { let d = Math.hypot(this.x - n.x, this.y - n.y); if (d < minDist) { minDist = d; nearest = n; } } });
                 if (nearest) this.target = nearest; else this.hp = 0;
@@ -1800,7 +1811,7 @@ class Unit {
 
             if (this.target.owner === this.owner) { this.target.unitsCount += this.hp; } 
             else {
-                const oldOwner=this.target.owner; const pe=protocolEffects();
+                const oldOwner=this.target.owner; const pe=__framePE || protocolEffects();
                 let damage = this.hp;
                 if (this.owner===1 && oldOwner===0) damage *= pe.neutralDamage;
                 if (this.owner===1 && oldOwner>1) damage *= pe.enemyDamage; if(this.owner===1 && (this.target.isCapital||this.target.isBoss)) damage*=pe.bossDamage;
@@ -2179,16 +2190,34 @@ function pointerUp(e) {
 canvas.addEventListener('pointerdown', pointerDown, {passive:false}); canvas.addEventListener('pointermove', pointerMove, {passive:false}); canvas.addEventListener('pointerup', pointerUp, {passive:false}); canvas.addEventListener('pointercancel', pointerUp, {passive:false});
 
 setInterval(() => {
-    if (gameState === 'playing') {
-        nodes.forEach(node => {
-            if (node.owner !== 0) {
-                const pe=protocolEffects();
-                let limit = 100 + (node.owner === 1 ? ((dailyOperationActive?1:upgCapacity) - 1) * 20 + pe.capacity : 0); if(node.owner===1) limit=Math.floor(limit*pe.capacityFactor); if (node.type === 2) limit = Math.floor(limit * 1.5);
-                if (node.isBoss) limit = Math.floor(limit * (1.30 + .12*(node.bossTier||1))); if (node.unitsCount < limit) { let gain = (node.type === 1) ? 2 : 1; if (node.owner === 1) { gain = (gain + ((dailyOperationActive?1:upgProd) - 1) * 0.2) * pe.prod * sectorEventValue('prodPlayer',1); if (Date.now()-sectorStartTime < 25000) gain *= pe.surge; if(nodes.filter(n=>n.owner===1).length<=2) gain*=pe.comebackProd; } else { const act=Math.min(5,Math.floor((currentLevel-1)/8)+1); const diff=runDifficultyCurve(currentLevel); gain *= (1+(currentLevel-1)*0.021+(act-1)*0.07) * diff.enemyProd * threatConfig().enemyProd * sectorEventValue('prodEnemy',1); if(node.isBoss) gain *= 1.12 + .08*(node.bossTier||1); } node.unitsCount += gain; if (node.unitsCount > limit) node.unitsCount = limit; }
-            }
-        });
+    if (gameState !== 'playing') return;
+    const pe=protocolEffects();
+    const now=Date.now();
+    let playerNodeCount=0;
+    for(let i=0;i<nodes.length;i++) if(nodes[i].owner===1) playerNodeCount++;
+    const act=Math.min(5,Math.floor((currentLevel-1)/8)+1);
+    const diff=runDifficultyCurve(currentLevel);
+    const enemyBase=(1+(currentLevel-1)*0.021+(act-1)*0.07) * diff.enemyProd * threatConfig().enemyProd * sectorEventValue('prodEnemy',1);
+    for(let i=0;i<nodes.length;i++){
+        const node=nodes[i];
+        if(node.owner===0) continue;
+        let limit=100+(node.owner===1?((dailyOperationActive?1:upgCapacity)-1)*20+pe.capacity:0);
+        if(node.owner===1) limit=Math.floor(limit*pe.capacityFactor);
+        if(node.type===2) limit=Math.floor(limit*1.5);
+        if(node.isBoss) limit=Math.floor(limit*(1.30+.12*(node.bossTier||1)));
+        if(node.unitsCount>=limit) continue;
+        let gain=node.type===1?2:1;
+        if(node.owner===1){
+            gain=(gain+((dailyOperationActive?1:upgProd)-1)*.2)*pe.prod*sectorEventValue('prodPlayer',1);
+            if(now-sectorStartTime<25000) gain*=pe.surge;
+            if(playerNodeCount<=2) gain*=pe.comebackProd;
+        }else{
+            gain*=enemyBase;
+            if(node.isBoss) gain*=1.12+.08*(node.bossTier||1);
+        }
+        node.unitsCount=Math.min(limit,node.unitsCount+gain);
     }
-}, 1000);
+},1000);
 
 function pointLineDistance(px, py, ax, ay, bx, by) {
     const dx=bx-ax, dy=by-ay; const len2=dx*dx+dy*dy || 1;
@@ -2210,6 +2239,28 @@ function factionStrength(owner){
     nodes.forEach(n=>{if(n.owner===owner) score+=n.unitsCount+(n.isCapital?42:0)+(n.type===1?10:0);});
     units.forEach(u=>{if(u.owner===owner) score+=Math.max(1,u.hp||1);});
     return score;
+}
+function buildAiSnapshot(){
+    const strengths={};
+    for(let i=0;i<nodes.length;i++){
+        const n=nodes[i]; if(n.owner<=0)continue;
+        strengths[n.owner]=(strengths[n.owner]||0)+n.unitsCount+(n.isCapital?42:0)+(n.type===1?10:0);
+    }
+    for(let i=0;i<units.length;i++){
+        const u=units[i]; if(u.owner<=0)continue;
+        strengths[u.owner]=(strengths[u.owner]||0)+Math.max(1,u.hp||1);
+    }
+    const owners=Object.keys(strengths).map(Number);
+    const strongestByOwner={};
+    for(let i=0;i<owners.length;i++){
+        const owner=owners[i]; let strongest=0,best=-Infinity;
+        for(let j=0;j<owners.length;j++){
+            const other=owners[j]; if(other===owner)continue;
+            const val=strengths[other]||0; if(val>best){best=val;strongest=other;}
+        }
+        strongestByOwner[owner]=strongest;
+    }
+    return {strengths,strongestByOwner};
 }
 function botProfile(personality){
     if(personality==='aggressive') return {reserve:.32, threshold:20, send:.61, neutral:34, enemy:96, capital:10, risk:1.12};
@@ -2249,14 +2300,19 @@ function botActionSendCount(node,action,profile,skill,personality){
     if(spare < target.unitsCount*(personality==='aggressive'?0.82:0.94)) return 0;
     return Math.max(8,Math.min(spare,Math.ceil(spare*.86)));
 }
-function botChooseAction(node, personality) {
+function botChooseAction(node, personality, aiCtx=null) {
     const profile=botProfile(personality), skill=aiCoreSkill();
     const reserveRatio=Math.min(.62,profile.reserve + (node.isCapital ? .04 : 0));
     const available=Math.floor(node.unitsCount*(1-reserveRatio));
     if(available<8)return null;
-    const rivalOwners=[...new Set(nodes.filter(n=>n.owner>0&&n.owner!==node.owner).map(n=>n.owner))];
-    const strengths={}; rivalOwners.forEach(o=>strengths[o]=factionStrength(o));
-    const strongest=rivalOwners.slice().sort((a,b)=>(strengths[b]||0)-(strengths[a]||0))[0];
+    let strongest=aiCtx?.strongestByOwner?.[node.owner]||0;
+    if(!strongest){
+        let best=-Infinity;
+        for(let i=0;i<nodes.length;i++){
+            const o=nodes[i].owner; if(o<=0||o===node.owner)continue;
+            const v=factionStrength(o); if(v>best){best=v;strongest=o;}
+        }
+    }
     const sourceEnemyDist=nearestHostileDistance(node,node.owner);
     const hazardSense=profile.risk*(1+skill*.28);
     let best=null,bestScore=-Infinity,bestReinforce=null,bestReinforceScore=-Infinity;
@@ -2335,45 +2391,72 @@ function botChooseAction(node, personality) {
     return best;
 }
 
-setInterval(() => {
-    if(gameState!=='playing')return;
+let __aiQueue=[];
+let __aiCycleCtx=null;
+let __aiNextCycleAt=0;
+function prepareAiCycle(now){
     const personalities=window.currentLevelConfig?.botPersonalities||{2:(window.currentLevelConfig?.botPersonality||'balanced')};
-    const difficulty=Math.min(1.45,currentLevel/32),skill=aiCoreSkill(),now=Date.now();
-    const botNodes=nodes.filter(n=>n.owner>1).sort((a,b)=>b.unitsCount-a.unitsCount);
-    const ownerCounts={};botNodes.forEach(n=>ownerCounts[n.owner]=(ownerCounts[n.owner]||0)+1);
-    const actionsByOwner={};
-    botNodes.forEach(node=>{
-        const personality=personalities[node.owner]||'balanced';
-        const profile=botProfile(personality);
-        if(node.unitsCount<profile.threshold)return;
-        if((node.aiNextAt||0)>now)return;
-        const maxFactionActions=(skill>=3&&ownerCounts[node.owner]>=3)?2:(skill>=2&&ownerCounts[node.owner]>=5?2:1);
-        if((actionsByOwner[node.owner]||0)>=maxFactionActions)return;
-        const action=botChooseAction(node,personality);
-        if(!action||action.score<(skill>=1?13:18))return;
-        const factionPenalty=Math.max(0,(window.currentLevelConfig?.botCount||1)-1)*.055;
-        const chance=Math.max(.20,Math.min(.94,.52+difficulty*.20+(personality==='aggressive' ? .08 : 0)+(personality==='tactician' ? .025 : 0)+sectorEventValue('aggression',0)+protocolEffects().botAggro+threatConfig().botAggro+skill*.045-factionPenalty));
-        if(gameplayRandom()>chance)return;
-        const actualSendCount=botActionSendCount(node,action,profile,skill,personality);
-        if(actualSendCount<8)return;
-        node.unitsCount-=actualSendCount;node.pulse=10;
-        node.aiNextAt=now+Math.max(1300,2050-skill*210)+Math.floor(gameplayRandom()*260);
-        actionsByOwner[node.owner]=(actionsByOwner[node.owner]||0)+1;
-        window.PolishFX?.event('enemySend');
-        spawnFleetPackets(node,action.target,actualSendCount,78);
-    });
-}, 1500);
+    const skill=aiCoreSkill();
+    const botNodes=[];
+    const ownerCounts={};
+    for(let i=0;i<nodes.length;i++){
+        const n=nodes[i]; if(n.owner<=1)continue;
+        botNodes.push(n); ownerCounts[n.owner]=(ownerCounts[n.owner]||0)+1;
+    }
+    botNodes.sort((a,b)=>b.unitsCount-a.unitsCount);
+    __aiQueue=botNodes;
+    __aiCycleCtx={
+        personalities,skill,ownerCounts,actionsByOwner:{},snapshot:buildAiSnapshot(),
+        difficulty:Math.min(1.45,currentLevel/32)
+    };
+    __aiNextCycleAt=now+1500;
+}
+function processOneAiNode(now){
+    if(gameState!=='playing'){__aiQueue.length=0;__aiCycleCtx=null;return;}
+    if(!__aiQueue.length){ if(now>=__aiNextCycleAt)prepareAiCycle(now); else return; }
+    const node=__aiQueue.shift(); if(!node||node.owner<=1)return;
+    const c=__aiCycleCtx;if(!c)return;
+    const personality=c.personalities[node.owner]||'balanced';
+    const profile=botProfile(personality);
+    if(node.unitsCount<profile.threshold||(node.aiNextAt||0)>now)return;
+    const maxFactionActions=(c.skill>=3&&c.ownerCounts[node.owner]>=3)?2:(c.skill>=2&&c.ownerCounts[node.owner]>=5?2:1);
+    if((c.actionsByOwner[node.owner]||0)>=maxFactionActions)return;
+    const action=botChooseAction(node,personality,c.snapshot);
+    if(!action||action.score<(c.skill>=1?13:18))return;
+    const factionPenalty=Math.max(0,(window.currentLevelConfig?.botCount||1)-1)*.055;
+    const chance=Math.max(.20,Math.min(.94,.52+c.difficulty*.20+(personality==='aggressive'?.08:0)+(personality==='tactician'?.025:0)+sectorEventValue('aggression',0)+protocolEffects().botAggro+threatConfig().botAggro+c.skill*.045-factionPenalty));
+    if(gameplayRandom()>chance)return;
+    const actualSendCount=botActionSendCount(node,action,profile,c.skill,personality);
+    if(actualSendCount<8)return;
+    node.unitsCount-=actualSendCount;node.pulse=10;
+    node.aiNextAt=now+Math.max(1300,2050-c.skill*210)+Math.floor(gameplayRandom()*260);
+    c.actionsByOwner[node.owner]=(c.actionsByOwner[node.owner]||0)+1;
+    window.PolishFX?.event('enemySend');
+    spawnFleetPackets(node,action.target,actualSendCount,78);
+}
+// Stagger AI decisions so Firefox/Telegram do not receive one large 1.5 s CPU spike.
+setInterval(()=>processOneAiNode(Date.now()),__perfLite?110:80);
 
 let __lastHudRefresh = 0;
+let __lastWinLossCheck=0;
+let __lastPlayingClass=null;
 function gameLoop(now=performance.now()) {
     telemetryFrameTick();
     adaptivePerfTick(now);
+    __frameWallNow=Date.now();
+    __gameFrameId++;
+    window.__GAME_FRAME_ID__=__gameFrameId;
+    window.__GAME_FRAME_NOW__=now;
     let MAIN_C = THEMES[currentThemeIdx].color;
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
     
     ctx.save();
     let isPlaying = (gameState === 'playing');
     __framePE = isPlaying ? protocolEffects() : null;
+    if(isPlaying!==__lastPlayingClass){
+        __lastPlayingClass=isPlaying;
+        document.body.classList.toggle('game-running',isPlaying);
+    }
     
     // DOM writes every frame are expensive in Telegram WebView/Firefox.
     // HUD only needs a few updates per second; gameplay canvas still renders normally.
@@ -2391,7 +2474,7 @@ function gameLoop(now=performance.now()) {
     }
 
     if (isPlaying && screenShake > 0) { let dx = (Math.random() - 0.5) * 8; let dy = (Math.random() - 0.5) * 8; ctx.translate(dx, dy); screenShake--; }
-    if (isPlaying) checkWinLoss();
+    if (isPlaying && now-__lastWinLossCheck>120) { __lastWinLossCheck=now; checkWinLoss(); }
 
     ctx.fillStyle = MAIN_C;
     celestialBodies.forEach(cb => { 
